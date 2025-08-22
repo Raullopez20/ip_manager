@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}Logs de Auditoría - IP Manager{% endblock %}
+{% block header_title %}Logs de Auditoría{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Logs de Auditoría</h1>
+    <p class="page-subtitle">Monitorea toda la actividad del sistema y accesos de usuarios</p>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    Filtros de Auditoría
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Usuario</label>
+                        <select class="form-control" name="user">
+                            <option value="">Todos los usuarios</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if selected_user == user.id %}selected{% endif %}>
+                                {{ user.full_name }} (@{{ user.username }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Aplicación</label>
+                        <select class="form-control" name="app">
+                            <option value="">Todas las aplicaciones</option>
+                            {% for app in applications %}
+                            <option value="{{ app.id }}" {% if selected_app == app.id %}selected{% endif %}>
+                                {{ app.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Acción</label>
+                        <select class="form-control" name="action">
+                            <option value="">Todas las acciones</option>
+                            {% for action in actions %}
+                            <option value="{{ action }}" {% if selected_action == action %}selected{% endif %}>
+                                {% if action == 'access' %}Acceso
+                                {% elif action == 'favorite' %}Agregar Favorito
+                                {% elif action == 'unfavorite' %}Quitar Favorito
+                                {% else %}{{ action|title }}
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-1"></i>Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Registro de Actividad
+                    <span class="badge bg-secondary ms-2">{{ logs.total }}</span>
+                </h5>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary" onclick="exportLogs()">
+                        <i class="fas fa-download me-1"></i>Exportar
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="refreshLogs()">
+                        <i class="fas fa-sync me-1"></i>Actualizar
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if logs.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Usuario</th>
+                                <th>Acción</th>
+                                <th>Aplicación</th>
+                                <th>IP Cliente</th>
+                                <th>Navegador</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs.items %}
+                            <tr>
+                                <td>
+                                    <small class="d-block fw-bold">{{ log.access_time.strftime('%d/%m/%Y') }}</small>
+                                    <small class="text-muted">{{ log.access_time.strftime('%H:%M:%S') }}</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar me-2" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                                            {{ log.user.full_name[0] }}
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 small">{{ log.user.full_name }}</h6>
+                                            <small class="text-muted">@{{ log.user.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if log.action == 'access' else 'warning' if log.action == 'favorite' else 'secondary' }}">
+                                        <i class="fas fa-{{ 'eye' if log.action == 'access' else 'star' if log.action == 'favorite' else 'times' }} me-1"></i>
+                                        {% if log.action == 'access' %}Acceso
+                                        {% elif log.action == 'favorite' %}Favorito +
+                                        {% elif log.action == 'unfavorite' %}Favorito -
+                                        {% else %}{{ log.action|title }}
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if log.application.icon_filename %}
+                                        <img src="{{ log.application.icon_url }}" alt="{{ log.application.name }}"
+                                             class="me-2 rounded" style="width: 24px; height: 24px; object-fit: cover;">
+                                        {% else %}
+                                        <i class="fas fa-server me-2 text-primary"></i>
+                                        {% endif %}
+                                        <div>
+                                            <h6 class="mb-0 small">{{ log.application.name }}</h6>
+                                            <small class="text-muted">{{ log.application.ip_address }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <code class="small">{{ log.ip_address or 'No disponible' }}</code>
+                                </td>
+                                <td>
+                                    <small class="text-muted" title="{{ log.user_agent or 'No disponible' }}">
+                                        {% if log.user_agent %}
+                                            {% if 'Chrome' in log.user_agent %}
+                                                <i class="fab fa-chrome text-warning"></i> Chrome
+                                            {% elif 'Firefox' in log.user_agent %}
+                                                <i class="fab fa-firefox text-danger"></i> Firefox
+                                            {% elif 'Safari' in log.user_agent %}
+                                                <i class="fab fa-safari text-info"></i> Safari
+                                            {% elif 'Edge' in log.user_agent %}
+                                                <i class="fab fa-edge text-primary"></i> Edge
+                                            {% else %}
+                                                <i class="fas fa-globe text-secondary"></i> Otro
+                                            {% endif %}
+                                        {% else %}
+                                            <i class="fas fa-question text-muted"></i> N/A
+                                        {% endif %}
+                                    </small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if logs.pages > 1 %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav>
+                        <ul class="pagination">
+                            {% if logs.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_logs', page=logs.prev_num, user=selected_user, app=selected_app, action=selected_action) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in logs.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != logs.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin_logs', page=page_num, user=selected_user, app=selected_app, action=selected_action) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if logs.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_logs', page=logs.next_num, user=selected_user, app=selected_app, action=selected_action) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-clipboard-list fa-3x text-muted"></i>
+                    </div>
+                    <h5 class="mb-3">No hay logs disponibles</h5>
+                    <p class="text-muted mb-4">
+                        {% if selected_user or selected_app or selected_action %}
+                        No se encontraron logs que coincidan con los filtros seleccionados.
+                        {% else %}
+                        Aún no hay actividad registrada en el sistema.
+                        {% endif %}
+                    </p>
+                    {% if selected_user or selected_app or selected_action %}
+                    <a href="{{ url_for('admin_logs') }}" class="btn btn-primary">
+                        <i class="fas fa-refresh me-2"></i>Ver Todos los Logs
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas rápidas -->
+{% if logs.items %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Resumen de Actividad
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h4 class="text-success">{{ logs.items|selectattr("action", "equalto", "access")|list|length }}</h4>
+                            <small class="text-muted">Accesos</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h4 class="text-warning">{{ logs.items|selectattr("action", "equalto", "favorite")|list|length }}</h4>
+                            <small class="text-muted">Favoritos Agregados</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h4 class="text-secondary">{{ logs.items|selectattr("action", "equalto", "unfavorite")|list|length }}</h4>
+                            <small class="text-muted">Favoritos Eliminados</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h4 class="text-info">{{ logs.items|map(attribute='user_id')|unique|list|length }}</h4>
+                            <small class="text-muted">Usuarios Únicos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportLogs() {
+    // Obtener parámetros actuales
+    const params = new URLSearchParams(window.location.search);
+
+    // Crear URL de exportación (implementación futura)
+    alert('Funcionalidad de exportación en desarrollo. Se puede implementar para generar CSV/Excel.');
+}
+
+function refreshLogs() {
+    location.reload();
+}
+
+// Auto-submit cuando cambian los filtros
+document.querySelectorAll('select[name]').forEach(select => {
+    select.addEventListener('change', function() {
+        this.form.submit();
+    });
+});
+
+// Actualización automática cada 30 segundos
+setInterval(function() {
+    // Solo actualizar si estamos en la primera página sin filtros
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get('page') && !params.get('user') && !params.get('app') && !params.get('action')) {
+        location.reload();
+    }
+}, 30000);
+
+// Mostrar tooltip con user agent completo
+document.querySelectorAll('[title]').forEach(element => {
+    new bootstrap.Tooltip(element);
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.user-avatar {
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Administración - IP Manager{% endblock %}
+{% block header_title %}Panel de Administración{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Panel de Administración</h1>
+    <p class="page-subtitle">Gestiona usuarios, aplicaciones y monitorea la actividad del sistema</p>
+</div>
+
+<!-- Estadísticas principales -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <div class="p-3 rounded-circle bg-primary text-white">
+                        <i class="fas fa-users fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1 text-primary">{{ total_users }}</h3>
+                <p class="text-muted mb-0">Total Usuarios</p>
+                <small class="text-success">
+                    <i class="fas fa-arrow-up me-1"></i>{{ active_users }} activos
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <div class="p-3 rounded-circle bg-success text-white">
+                        <i class="fas fa-server fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1 text-success">{{ total_apps }}</h3>
+                <p class="text-muted mb-0">Total Aplicaciones</p>
+                <small class="text-success">
+                    <i class="fas fa-check me-1"></i>{{ active_apps }} activas
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <div class="p-3 rounded-circle bg-info text-white">
+                        <i class="fas fa-folder fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1 text-info">{{ total_categories }}</h3>
+                <p class="text-muted mb-0">Categorías</p>
+                <small class="text-info">
+                    <i class="fas fa-layer-group me-1"></i>Organizadas
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-3">
+                    <div class="p-3 rounded-circle bg-warning text-white">
+                        <i class="fas fa-chart-line fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1 text-warning">{{ recent_logs|length }}</h3>
+                <p class="text-muted mb-0">Actividad Reciente</p>
+                <small class="text-warning">
+                    <i class="fas fa-clock me-1"></i>Últimas horas
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enlaces rápidos de gestión -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    Acciones Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_create_user') }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                            <i class="fas fa-user-plus fa-2x mb-2"></i>
+                            <span>Crear Usuario</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_create_application') }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                            <i class="fas fa-plus-circle fa-2x mb-2"></i>
+                            <span>Agregar App</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_categories') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                            <i class="fas fa-tags fa-2x mb-2"></i>
+                            <span>Categorías</span>
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('admin_statistics') }}" class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                            <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                            <span>Estadísticas</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Actividad reciente -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Actividad Reciente
+                </h5>
+                <a href="{{ url_for('admin_logs') }}" class="btn btn-outline-primary btn-sm">
+                    Ver todos los logs
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_logs %}
+                <div class="timeline">
+                    {% for log in recent_logs %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker">
+                            <i class="fas fa-{{ 'star' if log.action == 'favorite' else 'eye' if log.action == 'access' else 'times' }}
+                               text-{{ 'warning' if log.action == 'favorite' else 'success' if log.action == 'access' else 'danger' }}"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">
+                                {{ log.user.full_name }}
+                                {% if log.action == 'access' %}accedió a{% elif log.action == 'favorite' %}marcó como favorito{% else %}eliminó de favoritos{% endif %}
+                                <strong>{{ log.application.name }}</strong>
+                            </h6>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ log.access_time.strftime('%d/%m/%Y %H:%M') }}
+                                <i class="fas fa-map-marker-alt ms-2 me-1"></i>{{ log.ip_address or 'IP desconocida' }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-history fa-2x text-muted mb-3"></i>
+                    <p class="text-muted">No hay actividad reciente</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel lateral -->
+    <div class="col-lg-4">
+        <!-- Aplicaciones más populares -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-fire me-2 text-danger"></i>
+                    Apps Más Populares
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if popular_apps %}
+                <div class="list-group list-group-flush">
+                    {% for app in popular_apps %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                {% if app.icon_filename %}
+                                <img src="{{ app.icon_url }}" alt="{{ app.name }}" class="rounded" style="width: 32px; height: 32px; object-fit: cover;">
+                                {% else %}
+                                <i class="fas fa-server text-primary"></i>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h6 class="mb-0">{{ app.name }}</h6>
+                                <small class="text-muted">{{ app.ip_address }}</small>
+                            </div>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">{{ app.access_count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+                    <p class="text-muted small">Sin datos aún</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Usuarios más activos -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-medal me-2 text-warning"></i>
+                    Usuarios Más Activos
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if active_users_stats %}
+                <div class="list-group list-group-flush">
+                    {% for user_stat in active_users_stats %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar me-3" style="width: 32px; height: 32px; font-size: 0.875rem;">
+                                {{ user_stat.full_name[0] }}
+                            </div>
+                            <div>
+                                <h6 class="mb-0">{{ user_stat.full_name }}</h6>
+                                <small class="text-muted">@{{ user_stat.username }}</small>
+                            </div>
+                        </div>
+                        <span class="badge bg-success rounded-pill">{{ user_stat.access_count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                    <p class="text-muted small">Sin actividad aún</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -23px;
+    top: 0;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 3px solid #007bff;
+}
+
+.user-avatar {
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

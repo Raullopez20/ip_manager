@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Estadísticas - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Estadísticas Detalladas</h1>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver al Panel
+                </a>
+            </div>
+
+            <!-- Usuarios por Departamento -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-users text-primary"></i> Usuarios por Departamento</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if users_by_department %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Departamento</th>
+                                            <th class="text-end">Usuarios</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for department, count in users_by_department %}
+                                        <tr>
+                                            <td>{{ department or 'Sin departamento' }}</td>
+                                            <td class="text-end">
+                                                <span class="badge bg-primary">{{ count }}</span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No hay datos disponibles</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-trophy text-warning"></i> Usuarios Más Activos</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if top_users %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Usuario</th>
+                                            <th class="text-end">Accesos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for full_name, username, access_count in top_users %}
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <strong>{{ full_name }}</strong>
+                                                    <small class="text-muted d-block">@{{ username }}</small>
+                                                </div>
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="badge bg-success">{{ access_count }}</span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No hay datos disponibles</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aplicaciones Más Accedidas -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-chart-bar text-info"></i> Aplicaciones Más Accedidas</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if most_accessed %}
+                            <div class="row">
+                                {% for name, access_count in most_accessed %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                        <div class="me-3">
+                                            <i class="fas fa-app fa-2x text-primary"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ name }}</h6>
+                                            <small class="text-muted">{{ access_count }} accesos</small>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-primary fs-6">{{ access_count }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No hay datos disponibles</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actividad Diaria -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-calendar-alt text-success"></i> Actividad de los Últimos 30 Días</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if daily_activity %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th class="text-end">Accesos</th>
+                                            <th>Actividad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for date, count in daily_activity %}
+                                        <tr>
+                                            <td>{{ date.strftime('%d/%m/%Y') if date else 'N/A' }}</td>
+                                            <td class="text-end">
+                                                <span class="badge bg-info">{{ count }}</span>
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 10px;">
+                                                    {% set max_count = daily_activity|map(attribute=1)|max %}
+                                                    {% set percentage = (count / max_count * 100) if max_count > 0 else 0 %}
+                                                    <div class="progress-bar bg-success"
+                                                         style="width: {{ percentage }}%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No hay actividad registrada en los últimos 30 días</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen Estadístico -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h5><i class="fas fa-info-circle"></i> Resumen Estadístico</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <div class="p-3">
+                                        <h4 class="text-primary">{{ users_by_department|sum(attribute=1) if users_by_department else 0 }}</h4>
+                                        <small class="text-muted">Total Usuarios</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3">
+                                        <h4 class="text-success">{{ most_accessed|length }}</h4>
+                                        <small class="text-muted">Apps Populares</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3">
+                                        <h4 class="text-info">{{ daily_activity|sum(attribute=1) if daily_activity else 0 }}</h4>
+                                        <small class="text-muted">Accesos (30 días)</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3">
+                                        <h4 class="text-warning">{{ top_users|length }}</h4>
+                                        <small class="text-muted">Usuarios Activos</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.progress {
+    background-color: #e9ecef;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.bg-light:hover {
+    background-color: #e9ecef !important;
+}
+</style>
+{% endblock %}

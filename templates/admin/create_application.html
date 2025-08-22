@@ -1,0 +1,543 @@
+{% extends "base.html" %}
+
+{% block title %}Agregar Aplicación - IP Manager{% endblock %}
+{% block header_title %}Agregar Nueva Aplicación{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Administración</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_applications') }}">Aplicaciones</a></li>
+            <li class="breadcrumb-item active">Agregar Aplicación</li>
+        </ol>
+    </nav>
+    <h1 class="page-title">Agregar Nueva Aplicación</h1>
+    <p class="page-subtitle">Registra una nueva aplicación o servicio para acceso de usuarios</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Información de la Aplicación
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="createAppForm" novalidate>
+                    <div class="row">
+                        <!-- Información Básica -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Información Básica</h6>
+
+                            <div class="mb-3">
+                                <label for="name" class="form-label">
+                                    <i class="fas fa-tag me-1 text-primary"></i>
+                                    Nombre de la Aplicación <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="name"
+                                       name="name"
+                                       placeholder="Ej: Panel de Control, Base de Datos, etc."
+                                       required>
+                                <div class="invalid-feedback">
+                                    Por favor ingresa el nombre de la aplicación.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">
+                                    <i class="fas fa-align-left me-1 text-primary"></i>
+                                    Descripción
+                                </label>
+                                <textarea class="form-control"
+                                          id="description"
+                                          name="description"
+                                          rows="3"
+                                          placeholder="Describe brevemente qué hace esta aplicación..."></textarea>
+                                <div class="form-text">Opcional: Ayuda a los usuarios a entender el propósito de la aplicación</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="category_id" class="form-label">
+                                    <i class="fas fa-folder me-1 text-primary"></i>
+                                    Categoría
+                                </label>
+                                <select class="form-control" id="category_id" name="category_id">
+                                    <option value="">Seleccionar categoría</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}" data-color="{{ category.color }}" data-icon="{{ category.icon }}">
+                                        {{ category.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Ayuda a organizar las aplicaciones por tipo</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="tags" class="form-label">
+                                    <i class="fas fa-tags me-1 text-primary"></i>
+                                    Etiquetas
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="tags"
+                                       name="tags"
+                                       placeholder="servidor, producción, desarrollo, base-datos">
+                                <div class="form-text">Separar con comas. Facilita la búsqueda de aplicaciones</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="icon" class="form-label">
+                                    <i class="fas fa-image me-1 text-primary"></i>
+                                    Icono de la Aplicación
+                                </label>
+                                <input type="file"
+                                       class="form-control"
+                                       id="icon"
+                                       name="icon"
+                                       accept="image/*">
+                                <div class="form-text">Formatos: PNG, JPG, GIF, SVG. Tamaño máximo: 5MB</div>
+                                <div id="imagePreview" class="mt-2 d-none">
+                                    <img id="previewImg" src="" alt="Vista previa" style="max-width: 64px; max-height: 64px; border-radius: 8px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuración de Red -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Configuración de Acceso</h6>
+
+                            <div class="mb-3">
+                                <label for="ip_address" class="form-label">
+                                    <i class="fas fa-globe me-1 text-primary"></i>
+                                    Dirección IP <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="ip_address"
+                                       name="ip_address"
+                                       placeholder="192.168.1.100 o servidor.empresa.local"
+                                       required>
+                                <div class="invalid-feedback">
+                                    Por favor ingresa una dirección IP válida.
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="protocol" class="form-label">
+                                            <i class="fas fa-shield-alt me-1 text-primary"></i>
+                                            Protocolo
+                                        </label>
+                                        <select class="form-control" id="protocol" name="protocol">
+                                            <option value="http">HTTP</option>
+                                            <option value="https" selected>HTTPS</option>
+                                            <option value="ftp">FTP</option>
+                                            <option value="ssh">SSH</option>
+                                            <option value="rdp">RDP</option>
+                                            <option value="telnet">Telnet</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="port" class="form-label">
+                                            <i class="fas fa-plug me-1 text-primary"></i>
+                                            Puerto
+                                        </label>
+                                        <input type="number"
+                                               class="form-control"
+                                               id="port"
+                                               name="port"
+                                               placeholder="80, 443, 8080..."
+                                               min="1"
+                                               max="65535">
+                                        <div class="form-text">Opcional si es puerto estándar</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="url_path" class="form-label">
+                                    <i class="fas fa-route me-1 text-primary"></i>
+                                    Ruta Adicional
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="url_path"
+                                       name="url_path"
+                                       placeholder="/admin, /dashboard, /login"
+                                       value="/">
+                                <div class="form-text">Ruta específica dentro de la aplicación</div>
+                            </div>
+
+                            <!-- Vista previa de URL -->
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-link me-1 text-success"></i>
+                                    URL Final
+                                </label>
+                                <div class="p-2 bg-light rounded border">
+                                    <code id="urlPreview">https://[IP][puerto][ruta]</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de Autenticación -->
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-3">Configuración de Autenticación</h6>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-light">
+                                <div class="card-body">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="requires_auth" name="requires_auth">
+                                        <label class="form-check-label" for="requires_auth">
+                                            <strong>Requiere Autenticación Adicional</strong>
+                                        </label>
+                                    </div>
+                                    <div class="form-text mt-2">
+                                        Marca si la aplicación requiere credenciales específicas además del acceso al sistema IP Manager.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6" id="authConfig" style="display: none;">
+                            <div class="mb-3">
+                                <label for="auth_username" class="form-label">
+                                    <i class="fas fa-user me-1 text-primary"></i>
+                                    Usuario por Defecto
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="auth_username"
+                                       name="auth_username"
+                                       placeholder="admin, root, etc.">
+                                <div class="form-text">Usuario sugerido para acceder a la aplicación (opcional)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de Privacidad -->
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-3">Configuración de Privacidad</h6>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_private" name="is_private">
+                                <label class="form-check-label" for="is_private">
+                                    <strong>Aplicación Privada</strong>
+                                </label>
+                            </div>
+                            <div class="form-text mt-2">
+                                Marca si la aplicación debe ser accesible solo para usuarios autorizados.
+                            </div>
+                        </div>
+
+                        <div class="col-md-6" id="departmentsContainer" style="display: none;">
+                            <div class="mb-3">
+                                <label for="allowed_departments" class="form-label">
+                                    <i class="fas fa-users me-1 text-primary"></i>
+                                    Departamentos Permitidos
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="allowed_departments"
+                                       name="allowed_departments"
+                                       placeholder="IT, Contabilidad, Gerencia">
+                                <div class="form-text">
+                                    Departamentos separados por comas. Los usuarios de estos departamentos tendrán acceso automático.
+                                </div>
+                            </div>
+
+                            {% if departments %}
+                            <div class="mt-2">
+                                <small class="text-muted">Departamentos disponibles:</small>
+                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                    {% for dept in departments %}
+                                    <span class="badge bg-light text-dark cursor-pointer" onclick="addDepartment('{{ dept }}')">{{ dept }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info alert-sm" id="privacyInfo" style="display: none;">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong>Nota:</strong> Las aplicaciones privadas solo serán visibles para:
+                            <ul class="mb-0 mt-1">
+                                <li>Administradores del sistema</li>
+                                <li>Usuarios de departamentos permitidos</li>
+                                <li>Usuarios con permisos específicos</li>
+                            </ul>
+                        </small>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a href="{{ url_for('admin_applications') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancelar
+                        </a>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-info" onclick="testConnection()">
+                                <i class="fas fa-plug me-1"></i>Probar Conexión
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Crear Aplicación
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createAppForm');
+    const requiresAuthCheckbox = document.getElementById('requires_auth');
+    const authConfig = document.getElementById('authConfig');
+    const isPrivateCheckbox = document.getElementById('is_private');
+    const departmentsContainer = document.getElementById('departmentsContainer');
+    const privacyInfo = document.getElementById('privacyInfo');
+
+    // Toggle configuración de autenticación
+    requiresAuthCheckbox.addEventListener('change', function() {
+        authConfig.style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Toggle configuración de privacidad
+    isPrivateCheckbox.addEventListener('change', function() {
+        departmentsContainer.style.display = this.checked ? 'block' : 'none';
+        privacyInfo.style.display = this.checked ? 'block' : 'none';
+    });
+
+    // Actualizar vista previa de URL
+    function updateUrlPreview() {
+        const protocol = document.getElementById('protocol').value;
+        const ip = document.getElementById('ip_address').value;
+        const port = document.getElementById('port').value;
+        const path = document.getElementById('url_path').value;
+
+        let url = protocol + '://' + (ip || '[IP]');
+
+        if (port && !['80', '443'].includes(port)) {
+            url += ':' + port;
+        }
+
+        url += (path || '/');
+
+        document.getElementById('urlPreview').textContent = url;
+    }
+
+    // Event listeners para actualizar URL
+    ['protocol', 'ip_address', 'port', 'url_path'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateUrlPreview);
+    });
+
+    // Vista previa de imagen
+    document.getElementById('icon').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                preview.classList.remove('d-none');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.classList.add('d-none');
+        }
+    });
+
+    // Validación del formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (validateForm()) {
+            this.submit();
+        }
+    });
+
+    function validateForm() {
+        let isValid = true;
+        const form = document.getElementById('createAppForm');
+
+        // Limpiar validaciones anteriores
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
+
+        // Validar campos requeridos
+        const name = document.getElementById('name');
+        const ipAddress = document.getElementById('ip_address');
+
+        if (!name.value.trim()) {
+            name.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            name.classList.add('is-valid');
+        }
+
+        if (!ipAddress.value.trim()) {
+            ipAddress.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            // Validación básica de IP/hostname
+            const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (ipPattern.test(ipAddress.value.trim())) {
+                ipAddress.classList.add('is-valid');
+            } else {
+                ipAddress.classList.add('is-invalid');
+                isValid = false;
+            }
+        }
+
+        // Validar puerto si se proporciona
+        const port = document.getElementById('port');
+        if (port.value && (port.value < 1 || port.value > 65535)) {
+            port.classList.add('is-invalid');
+            isValid = false;
+        } else if (port.value) {
+            port.classList.add('is-valid');
+        }
+
+        return isValid;
+    }
+
+    // Validación en tiempo real
+    document.querySelectorAll('input, select, textarea').forEach(element => {
+        element.addEventListener('blur', function() {
+            validateField(this);
+        });
+    });
+
+    function validateField(field) {
+        field.classList.remove('is-invalid', 'is-valid');
+
+        const value = field.value.trim();
+
+        switch(field.id) {
+            case 'name':
+                if (value) field.classList.add('is-valid');
+                break;
+
+            case 'ip_address':
+                if (value) {
+                    const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                    if (ipPattern.test(value)) {
+                        field.classList.add('is-valid');
+                    } else {
+                        field.classList.add('is-invalid');
+                    }
+                }
+                break;
+
+            case 'port':
+                if (value && value >= 1 && value <= 65535) {
+                    field.classList.add('is-valid');
+                } else if (value) {
+                    field.classList.add('is-invalid');
+                }
+                break;
+        }
+    }
+
+    // Autocompletar puerto basado en protocolo
+    document.getElementById('protocol').addEventListener('change', function() {
+        const portField = document.getElementById('port');
+        const protocolPorts = {
+            'http': '80',
+            'https': '443',
+            'ftp': '21',
+            'ssh': '22',
+            'rdp': '3389',
+            'telnet': '23'
+        };
+
+        if (!portField.value && protocolPorts[this.value]) {
+            portField.value = protocolPorts[this.value];
+            updateUrlPreview();
+        }
+    });
+
+    // Inicializar vista previa
+    updateUrlPreview();
+});
+
+// Función para agregar departamento desde las sugerencias
+function addDepartment(dept) {
+    const input = document.getElementById('allowed_departments');
+    const currentValue = input.value.trim();
+
+    if (!currentValue) {
+        input.value = dept;
+    } else if (!currentValue.split(',').map(d => d.trim()).includes(dept)) {
+        input.value = currentValue + ', ' + dept;
+    }
+
+    input.focus();
+}
+
+// Función para probar conexión
+function testConnection() {
+    const protocol = document.getElementById('protocol').value;
+    const ip = document.getElementById('ip_address').value.trim();
+    const port = document.getElementById('port').value;
+    const path = document.getElementById('url_path').value || '/';
+
+    if (!ip) {
+        alert('Por favor ingresa una dirección IP antes de probar la conexión.');
+        document.getElementById('ip_address').focus();
+        return;
+    }
+
+    // Construir URL completa
+    let url = protocol + '://' + ip;
+
+    if (port && !['80', '443'].includes(port)) {
+        url += ':' + port;
+    }
+
+    url += path;
+
+    // Mostrar mensaje de que se va a probar
+    const originalText = event.target.innerHTML;
+    event.target.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Probando...';
+    event.target.disabled = true;
+
+    // Restaurar botón después de 2 segundos
+    setTimeout(() => {
+        event.target.innerHTML = originalText;
+        event.target.disabled = false;
+    }, 2000);
+
+    // Abrir en nueva ventana para probar
+    try {
+        const newWindow = window.open(url, '_blank');
+        if (!newWindow) {
+            alert('No se pudo abrir la ventana. Verifica que no esté bloqueada por el navegador.\n\nURL: ' + url);
+        }
+    } catch (error) {
+        alert('Error al abrir la URL: ' + url + '\n\nError: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

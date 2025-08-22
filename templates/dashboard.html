@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - IP Manager{% endblock %}
+{% block header_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">¡Bienvenido, {{ user.full_name }}!</h1>
+    <p class="page-subtitle">Accede rápidamente a tus aplicaciones favoritas y explora nuevas herramientas</p>
+</div>
+
+<!-- Estadísticas rápidas -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3 rounded bg-primary text-white">
+                        <i class="fas fa-star fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1">{{ total_favorites }}</h3>
+                <p class="text-muted mb-0">Favoritos</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3 rounded-circle bg-success text-white">
+                        <i class="fas fa-server fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1">{{ total_apps }}</h3>
+                <p class="text-muted mb-0">Aplicaciones</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3 rounded-circle bg-info text-white">
+                        <i class="fas fa-folder fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1">{{ categories|length }}</h3>
+                <p class="text-muted mb-0">Categorías</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3 rounded-circle bg-warning text-white">
+                        <i class="fas fa-clock fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1">{{ recent_apps|length }}</h3>
+                <p class="text-muted mb-0">Recientes</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Búsqueda rápida -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="form-control search-input" id="quickSearch" placeholder="Buscar aplicaciones...">
+                </div>
+                <div id="searchResults" class="d-none">
+                    <h6 class="mb-3">Resultados de búsqueda:</h6>
+                    <div id="searchResultsList" class="app-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aplicaciones Favoritas -->
+{% if favorites %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-star text-warning me-2"></i>
+                    Mis Favoritos
+                </h5>
+                <a href="{{ url_for('browse_applications') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Agregar más
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="app-grid">
+                    {% for app in favorites %}
+                    <div class="app-card" onclick="accessApp({{ app.id }})">
+                        <div class="app-icon">
+                            {% if app.icon_filename %}
+                            <img src="{{ app.icon_url }}" alt="{{ app.name }}" onerror="this.outerHTML='<i class=\'fas fa-server fa-2x text-primary\'></i>'">
+                            {% else %}
+                            <i class="fas fa-server fa-2x text-primary"></i>
+                            {% endif %}
+                        </div>
+                        <h6 class="app-name">{{ app.name }}</h6>
+                        <p class="app-description">
+                            {% if app.description %}
+                                {% if app.description|length > 100 %}
+                                    {{ app.description[:100] }}...
+                                {% else %}
+                                    {{ app.description }}
+                                {% endif %}
+                            {% else %}
+                                Sin descripción
+                            {% endif %}
+                        </p>
+                        <div class="app-actions">
+                            <button class="btn-favorite active" onclick="event.stopPropagation(); toggleFavorite({{ app.id }}, this)">
+                                <i class="fas fa-star"></i>
+                            </button>
+                            <small class="text-muted ms-auto">{{ app.ip_address }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-star fa-3x text-muted"></i>
+                </div>
+                <h5 class="mb-3">No tienes aplicaciones favoritas</h5>
+                <p class="text-muted mb-4">Explora nuestro catálogo y marca tus aplicaciones favoritas para acceso rápido</p>
+                <a href="{{ url_for('browse_applications') }}" class="btn btn-primary">
+                    <i class="fas fa-search me-2"></i>Explorar Aplicaciones
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Aplicaciones Recientes -->
+{% if recent_apps %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock text-info me-2"></i>
+                    Accesos Recientes
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="app-grid">
+                    {% for app in recent_apps %}
+                    <div class="app-card" onclick="accessApp({{ app.id }})">
+                        <div class="app-icon">
+                            {% if app.icon_filename %}
+                            <img src="{{ app.icon_url }}" alt="{{ app.name }}" onerror="this.outerHTML='<i class=\'fas fa-server fa-2x text-primary\'></i>'">
+                            {% else %}
+                            <i class="fas fa-server fa-2x text-primary"></i>
+                            {% endif %}
+                        </div>
+                        <h6 class="app-name">{{ app.name }}</h6>
+                        <p class="app-description">
+                            {% if app.description %}
+                                {% if app.description|length > 100 %}
+                                    {{ app.description[:100] }}...
+                                {% else %}
+                                    {{ app.description }}
+                                {% endif %}
+                            {% else %}
+                                Sin descripción
+                            {% endif %}
+                        </p>
+                        <div class="app-actions">
+                            {% set is_favorite = False %}
+                            {% for fav in favorites %}
+                                {% if fav.id == app.id %}
+                                    {% set is_favorite = True %}
+                                {% endif %}
+                            {% endfor %}
+                            <button class="btn-favorite {% if is_favorite %}active{% endif %}" onclick="event.stopPropagation(); toggleFavorite({{ app.id }}, this)">
+                                <i class="fa{% if is_favorite %}s{% else %}r{% endif %} fa-star"></i>
+                            </button>
+                            <small class="text-muted ms-auto">{{ app.ip_address }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Categorías -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-folder text-primary me-2"></i>
+                    Explorar por Categorías
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for category in categories %}
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <a href="{{ url_for('browse_applications', category=category.id) }}" class="text-decoration-none">
+                            <div class="card h-100 border-2" style="border-color: {{ category.color }}20 !important;">
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <!-- Convertir automáticamente las clases de iconos -->
+                                        <i class="{{ 'fas ' + category.icon if not category.icon.startswith('fas ') and not category.icon.startswith('far ') and not category.icon.startswith('fab ') else category.icon }} fa-2x" style="color: {{ category.color }};"></i>
+                                    </div>
+                                    <h6 class="card-title">{{ category.name }}</h6>
+                                    <p class="card-text text-muted small">{{ category.description }}</p>
+                                    <small class="text-muted">{{ category.applications.count() }} aplicaciones</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let searchTimeout;
+
+document.getElementById('quickSearch').addEventListener('input', function() {
+    const query = this.value.trim();
+
+    clearTimeout(searchTimeout);
+
+    if (query.length < 2) {
+        document.getElementById('searchResults').classList.add('d-none');
+        return;
+    }
+
+    searchTimeout = setTimeout(() => {
+        fetch(`/api/applications/search?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                const resultsContainer = document.getElementById('searchResultsList');
+                const searchResults = document.getElementById('searchResults');
+
+                if (data.length > 0) {
+                    resultsContainer.innerHTML = data.map(app => `
+                        <div class="app-card" onclick="accessApp(${app.id})">
+                            <div class="app-icon">
+                                <img src="${app.icon_url}" alt="${app.name}" onerror="this.outerHTML='<i class=\\'fas fa-server fa-2x text-primary\\'></i>'">
+                            </div>
+                            <h6 class="app-name">${app.name}</h6>
+                            <p class="app-description">${app.description.substring(0, 100)}${app.description.length > 100 ? '...' : ''}</p>
+                            <div class="app-actions">
+                                <button class="btn-favorite ${app.is_favorite ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavorite(${app.id}, this)">
+                                    <i class="fa${app.is_favorite ? 's' : 'r'} fa-star"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    searchResults.classList.remove('d-none');
+                } else {
+                    resultsContainer.innerHTML = '<p class="text-muted text-center">No se encontraron aplicaciones</p>';
+                    searchResults.classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }, 300);
+});
+
+// Limpiar búsqueda al hacer click fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-box') && !e.target.closest('#searchResults')) {
+        document.getElementById('searchResults').classList.add('d-none');
+        document.getElementById('quickSearch').value = '';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Búsqueda - IP Manager{% endblock %}
+{% block header_title %}Búsqueda Avanzada{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Búsqueda Avanzada</h1>
+    <p class="page-subtitle">Encuentra aplicaciones usando filtros avanzados y etiquetas</p>
+</div>
+
+<!-- Formulario de búsqueda avanzada -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>
+                    Filtros de Búsqueda
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Buscar por texto</label>
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text"
+                                   class="form-control search-input"
+                                   name="q"
+                                   placeholder="Nombre, descripción, IP..."
+                                   value="{{ search_query or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Categoría</label>
+                        <select class="form-control" name="category">
+                            <option value="">Todas las categorías</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Etiqueta</label>
+                        <select class="form-control" name="tag">
+                            <option value="">Todas las etiquetas</option>
+                            {% for tag in all_tags %}
+                            <option value="{{ tag }}" {% if selected_tag == tag %}selected{% endif %}>
+                                {{ tag }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Buscar
+                            </button>
+                            <a href="{{ url_for('search') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i>Limpiar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros rápidos por etiquetas -->
+{% if all_tags %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="mb-3">Filtros rápidos por etiquetas:</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for tag in all_tags[:15] %}
+                    <a href="{{ url_for('search', tag=tag) }}"
+                       class="badge bg-light text-dark text-decoration-none {% if selected_tag == tag %}bg-primary text-white{% endif %}">
+                        {{ tag }}
+                    </a>
+                    {% endfor %}
+                    {% if all_tags|length > 15 %}
+                    <span class="badge bg-secondary">+{{ all_tags|length - 15 }} más</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Resultados -->
+<div class="row">
+    <div class="col-12">
+        {% if applications %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-search-plus me-2"></i>
+                    Resultados de Búsqueda
+                    <span class="badge bg-secondary ms-2">{{ applications|length }}</span>
+                </h5>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-sort me-1"></i>Ordenar
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="sortResults('name')">Por nombre</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortResults('popularity')">Por popularidad</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortResults('recent')">Más recientes</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="app-grid" id="search-results">
+                    {% for app in applications %}
+                    <div class="app-card" onclick="accessApp({{ app.id }})" data-name="{{ app.name|lower }}" data-popularity="{{ app.access_count }}" data-created="{{ app.created_at.timestamp() }}">
+                        <div class="app-icon">
+                            {% if app.icon_filename %}
+                            <img src="{{ app.icon_url }}" alt="{{ app.name }}" onerror="this.outerHTML='<i class=\'fas fa-server fa-2x text-primary\'></i>'">
+                            {% else %}
+                            <i class="fas fa-server fa-2x text-primary"></i>
+                            {% endif %}
+                        </div>
+                        <h6 class="app-name">{{ app.name }}</h6>
+                        <p class="app-description">
+                            {{ app.description[:100] if app.description else 'Sin descripción' }}
+                            {% if app.description and app.description|length > 100 %}...{% endif %}
+                        </p>
+
+                        <!-- Información adicional -->
+                        <div class="app-meta mb-2">
+                            <small class="text-muted d-block">
+                                <i class="fas fa-globe me-1"></i>{{ app.ip_address }}
+                                {% if app.port and app.port not in [80, 443] %}:{{ app.port }}{% endif %}
+                            </small>
+                            {% if app.category %}
+                            <small class="text-muted d-block">
+                                <i class="{{ 'fas ' + app.category.icon if not app.category.icon.startswith('fas ') and not app.category.icon.startswith('far ') and not app.category.icon.startswith('fab ') else app.category.icon }} me-1" style="color: {{ app.category.color }};"></i>
+                                {{ app.category.name }}
+                            </small>
+                            {% endif %}
+                            {% if app.tags %}
+                            <div class="mt-2">
+                                {% for tag in app.get_tags_list()[:3] %}
+                                <span class="badge bg-light text-dark me-1">{{ tag }}</span>
+                                {% endfor %}
+                                {% if app.get_tags_list()|length > 3 %}
+                                <span class="badge bg-light text-dark">+{{ app.get_tags_list()|length - 3 }}</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Estadísticas -->
+                        <div class="app-stats mb-2">
+                            <small class="text-muted d-flex justify-content-between">
+                                <span>
+                                    <i class="fas fa-eye me-1"></i>{{ app.access_count }} vistas
+                                </span>
+                                {% if app.last_accessed %}
+                                <span>
+                                    <i class="fas fa-clock me-1"></i>{{ app.last_accessed.strftime('%d/%m') }}
+                                </span>
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        <div class="app-actions">
+                            <button class="btn-favorite {% if app.id in user_favorites %}active{% endif %}"
+                                    onclick="event.stopPropagation(); toggleFavorite({{ app.id }}, this)">
+                                <i class="fa{% if app.id in user_favorites %}s{% else %}r{% endif %} fa-star"></i>
+                            </button>
+                            <small class="text-muted ms-auto">
+                                {{ app.protocol.upper() }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% elif search_query or selected_category or selected_tag %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-search fa-3x text-muted"></i>
+                </div>
+                <h5 class="mb-3">No se encontraron resultados</h5>
+                <p class="text-muted mb-4">
+                    Tu búsqueda "{{ search_query or 'filtros seleccionados' }}" no devolvió ningún resultado.
+                </p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="{{ url_for('search') }}" class="btn btn-primary">
+                        <i class="fas fa-refresh me-2"></i>Nueva Búsqueda
+                    </a>
+                    <a href="{{ url_for('browse_applications') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-th-large me-2"></i>Ver Todas
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-search fa-3x text-primary"></i>
+                </div>
+                <h5 class="mb-3">Búsqueda Avanzada</h5>
+                <p class="text-muted mb-4">
+                    Utiliza los filtros de arriba para encontrar aplicaciones específicas por nombre, categoría o etiquetas.
+                </p>
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="d-flex gap-3 justify-content-center">
+                            <div class="text-center">
+                                <div class="bg-light rounded-circle p-3 mb-2 d-inline-block">
+                                    <i class="fas fa-keyboard text-primary"></i>
+                                </div>
+                                <small class="d-block text-muted">Busca por texto</small>
+                            </div>
+                            <div class="text-center">
+                                <div class="bg-light rounded-circle p-3 mb-2 d-inline-block">
+                                    <i class="fas fa-folder text-primary"></i>
+                                </div>
+                                <small class="d-block text-muted">Filtra por categoría</small>
+                            </div>
+                            <div class="text-center">
+                                <div class="bg-light rounded-circle p-3 mb-2 d-inline-block">
+                                    <i class="fas fa-tags text-primary"></i>
+                                </div>
+                                <small class="d-block text-muted">Usa etiquetas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Búsquedas guardadas (para futuras implementaciones) -->
+{% if search_query or selected_category or selected_tag %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">¿Te gusta esta búsqueda?</h6>
+                        <small class="text-muted">Puedes guardarla para acceso rápido en el futuro</small>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm" onclick="saveSearch()">
+                        <i class="fas fa-bookmark me-1"></i>Guardar búsqueda
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sortResults(type) {
+    const container = document.getElementById('search-results');
+    const cards = Array.from(container.children);
+
+    cards.sort((a, b) => {
+        switch(type) {
+            case 'name':
+                return a.dataset.name.localeCompare(b.dataset.name);
+            case 'popularity':
+                return parseInt(b.dataset.popularity) - parseInt(a.dataset.popularity);
+            case 'recent':
+                return parseFloat(b.dataset.created) - parseFloat(a.dataset.created);
+            default:
+                return 0;
+        }
+    });
+
+    // Reorganizar elementos
+    cards.forEach(card => container.appendChild(card));
+
+    // Efecto visual
+    container.style.opacity = '0.7';
+    setTimeout(() => {
+        container.style.opacity = '1';
+    }, 200);
+}
+
+function saveSearch() {
+    // Obtener parámetros actuales
+    const params = new URLSearchParams(window.location.search);
+    const searchData = {
+        query: params.get('q') || '',
+        category: params.get('category') || '',
+        tag: params.get('tag') || ''
+    };
+
+    // Generar nombre para la búsqueda
+    let searchName = 'Búsqueda personalizada';
+    if (searchData.query) searchName = `Búsqueda: "${searchData.query}"`;
+    else if (searchData.category) searchName = `Categoría filtrada`;
+    else if (searchData.tag) searchName = `Etiqueta: ${searchData.tag}`;
+
+    // Guardar en localStorage (implementación básica)
+    const savedSearches = JSON.parse(localStorage.getItem('savedSearches') || '[]');
+    savedSearches.push({
+        name: searchName,
+        params: searchData,
+        date: new Date().toISOString()
+    });
+
+    // Mantener solo las últimas 10 búsquedas
+    if (savedSearches.length > 10) {
+        savedSearches.shift();
+    }
+
+    localStorage.setItem('savedSearches', JSON.stringify(savedSearches));
+
+    // Mostrar confirmación
+    const btn = event.target;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check me-1"></i>Guardado';
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-success');
+
+    setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-primary');
+    }, 2000);
+}
+
+// Auto-submit del formulario con debounce
+let searchTimeout;
+document.querySelector('input[name="q"]').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    if (this.value.length >= 3 || this.value.length === 0) {
+        searchTimeout = setTimeout(() => {
+            this.form.submit();
+        }, 800);
+    }
+});
+
+// Resaltar términos de búsqueda
+document.addEventListener('DOMContentLoaded', function() {
+    const searchQuery = '{{ search_query|e }}';
+    if (searchQuery && searchQuery.length > 2) {
+        const regex = new RegExp(`(${searchQuery})`, 'gi');
+        document.querySelectorAll('.app-name, .app-description').forEach(element => {
+            element.innerHTML = element.innerHTML.replace(regex, '<mark>$1</mark>');
+        });
+    }
+});
+</script>
+{% endblock %}

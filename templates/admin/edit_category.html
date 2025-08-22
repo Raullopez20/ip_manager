@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Categoría - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Editar Categoría</h1>
+                <a href="{{ url_for('admin_categories') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver a Categorías
+                </a>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <form method="POST">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Nombre *</label>
+                                    <input type="text" class="form-control" id="name" name="name"
+                                           value="{{ category.name }}" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Descripción</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3">{{ category.description or '' }}</textarea>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="color" class="form-label">Color</label>
+                                            <input type="color" class="form-control form-control-color"
+                                                   id="color" name="color" value="{{ category.color }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="icon" class="form-label">Icono FontAwesome</label>
+                                            <select class="form-select" id="icon" name="icon">
+                                                <option value="fa-folder" {% if category.icon == 'fa-folder' %}selected{% endif %}>📁 Carpeta</option>
+                                                <option value="fa-server" {% if category.icon == 'fa-server' %}selected{% endif %}>🖥️ Servidor</option>
+                                                <option value="fa-globe" {% if category.icon == 'fa-globe' %}selected{% endif %}>🌐 Web</option>
+                                                <option value="fa-database" {% if category.icon == 'fa-database' %}selected{% endif %}>🗄️ Base de Datos</option>
+                                                <option value="fa-chart-line" {% if category.icon == 'fa-chart-line' %}selected{% endif %}>📈 Monitoreo</option>
+                                                <option value="fa-network-wired" {% if category.icon == 'fa-network-wired' %}selected{% endif %}>🔗 Red</option>
+                                                <option value="fa-shield-alt" {% if category.icon == 'fa-shield-alt' %}selected{% endif %}>🛡️ Seguridad</option>
+                                                <option value="fa-tools" {% if category.icon == 'fa-tools' %}selected{% endif %}>🔧 Herramientas</option>
+                                                <option value="fa-cloud" {% if category.icon == 'fa-cloud' %}selected{% endif %}>☁️ Cloud</option>
+                                                <option value="fa-bullhorn" {% if category.icon == 'fa-bullhorn' %}selected{% endif %}>📢 Megafonía</option>
+                                                <option value="fa-mobile-alt" {% if category.icon == 'fa-mobile-alt' %}selected{% endif %}>📱 Móvil</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Actualizar Categoría
+                                    </button>
+                                    <div>
+                                        <a href="{{ url_for('admin_categories') }}" class="btn btn-secondary me-2">Cancelar</a>
+                                        {% if category.applications.count() == 0 %}
+                                        <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                                            <i class="fas fa-trash"></i> Eliminar Categoría
+                                        </button>
+                                        {% else %}
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                title="No se puede eliminar: tiene {{ category.applications.count() }} aplicaciones asociadas" disabled>
+                                            <i class="fas fa-trash"></i> No se puede eliminar
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <!-- Vista previa -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Vista Previa</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="preview-category" style="border-left: 4px solid {{ category.color }}; padding: 15px; background-color: #f8f9fa;">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i id="preview-icon" class="fas {{ category.icon }} fa-2x me-3" style="color: {{ category.color }};"></i>
+                                    <div>
+                                        <h6 id="preview-name" class="mb-1">{{ category.name }}</h6>
+                                        <small class="text-muted">{{ category.applications.count() }} aplicaciones</small>
+                                    </div>
+                                </div>
+                                <p id="preview-description" class="mb-0">{{ category.description or 'Sin descripción' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información adicional -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5>Información</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Creada:</strong> {{ category.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                            <p><strong>Aplicaciones asociadas:</strong> {{ category.applications.count() }}</p>
+                            {% if category.applications.count() > 0 %}
+                            <hr>
+                            <h6>Aplicaciones en esta categoría:</h6>
+                            <ul class="list-unstyled mb-0">
+                                {% for app in category.applications.limit(5) %}
+                                <li class="mb-1">
+                                    <i class="fas fa-app text-muted me-2"></i>
+                                    {{ app.name }}
+                                </li>
+                                {% endfor %}
+                                {% if category.applications.count() > 5 %}
+                                <li class="text-muted">... y {{ category.applications.count() - 5 }} más</li>
+                                {% endif %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que quieres eliminar la categoría <strong>{{ category.name }}</strong>?</p>
+                <p class="text-danger">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{{ url_for('admin_delete_category', category_id=category.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete() {
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Actualizar vista previa en tiempo real
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('name');
+    const descriptionInput = document.getElementById('description');
+    const colorInput = document.getElementById('color');
+    const iconInput = document.getElementById('icon');
+
+    const previewName = document.getElementById('preview-name');
+    const previewDescription = document.getElementById('preview-description');
+    const previewIcon = document.getElementById('preview-icon');
+    const previewCategory = document.querySelector('.preview-category');
+
+    function updatePreview() {
+        previewName.textContent = nameInput.value || 'Nombre de categoría';
+        previewDescription.textContent = descriptionInput.value || 'Sin descripción';
+        previewIcon.className = `fas ${iconInput.value} fa-2x me-3`;
+        previewIcon.style.color = colorInput.value;
+        previewCategory.style.borderLeftColor = colorInput.value;
+    }
+
+    nameInput.addEventListener('input', updatePreview);
+    descriptionInput.addEventListener('input', updatePreview);
+    colorInput.addEventListener('input', updatePreview);
+    iconInput.addEventListener('change', updatePreview);
+});
+</script>
+{% endblock %}

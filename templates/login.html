@@ -1,0 +1,619 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso al Sistema - IP Manager</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome - Versión estable y específica -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Fallback para FontAwesome -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.4.0/css/all.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Favicon personalizado -->
+    <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --sidebar-width: 280px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            color: var(--text-primary);
+        }
+
+        /* Sidebar empresarial */
+        .login-sidebar {
+            width: 50%;
+            background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .sidebar-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .company-logo{
+            width: 160px;
+            height: 160px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+        }
+
+        .company-logo img {
+            width: 128px;
+            height: 128px;
+            object-fit: contain;
+        }
+
+
+        .company-logo i {
+            position: relative;
+            z-index: 1;
+        }
+
+        .company-logo:not(:has(i))::after {
+            display: block;
+        }
+
+        .sidebar-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .sidebar-subtitle {
+            font-size: 1.125rem;
+            opacity: 0.8;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .feature-list {
+            list-style: none;
+            text-align: left;
+            margin-top: 2rem;
+        }
+
+        .feature-list li {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            color: var(--primary-color);
+            margin-right: 0.75rem;
+            width: 16px;
+            font-weight: bold;
+        }
+
+        .feature-list i {
+            color: var(--primary-color);
+            margin-right: 0.75rem;
+            width: 16px;
+        }
+
+        /* Formulario principal */
+        .login-form-container {
+            width: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 420px;
+            padding: 0 1rem;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .form-header h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            background-color: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+
+        .form-control.is-valid {
+            border-color: #28a745;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .remember-me input[type="checkbox"] {
+            margin-right: 0.5rem;
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary-color);
+        }
+
+        .remember-me label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .alert-danger {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-success {
+            background-color: #ecfdf5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .alert-info {
+            background-color: #eff6ff;
+            color: #1e40af;
+            border-left: 4px solid #3b82f6;
+        }
+
+        /* Iconos de alerta con fallback */
+        .alert::before {
+            margin-right: 0.5rem;
+            font-weight: bold;
+        }
+
+        .alert-danger::before {
+            content: "⚠️";
+        }
+
+        .alert-success::before {
+            content: "✅";
+        }
+
+        .alert-info::before {
+            content: "ℹ️";
+        }
+
+        .footer-info {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .system-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .system-info::before {
+            content: "🔒";
+            color: #10b981;
+        }
+
+        /* Loading state */
+        .btn-loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .login-sidebar {
+                width: 100%;
+                min-height: 40vh;
+                padding: 2rem 1rem;
+            }
+
+            .sidebar-title {
+                font-size: 2rem;
+            }
+
+            .feature-list {
+                display: none;
+            }
+
+            .login-form-container {
+                width: 100%;
+                padding: 1rem;
+            }
+
+            .form-header h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Input focus effects */
+        .form-control:focus {
+            background-color: #fafbfc;
+        }
+
+        /* Validation styles */
+        .invalid-feedback {
+            display: block;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .valid-feedback {
+            display: block;
+            color: #28a745;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Asegurar que los iconos de FontAwesome se muestren */
+        .fas, .far, .fab, .fal, .fad, .fa {
+            font-family: "Font Awesome 6 Free", "Font Awesome 6 Pro", "Font Awesome 5 Free", "Font Awesome 5 Pro", FontAwesome, serif !important;
+            font-weight: 900;
+            display: inline-block;
+        }
+
+        /* Fallback manual para iconos específicos si FontAwesome no carga */
+        .fa-network-wired::before { content: "🌐"; }
+        .fa-check::before { content: "✓"; }
+        .fa-exclamation-triangle::before { content: "⚠️"; }
+        .fa-check-circle::before { content: "✅"; }
+        .fa-info-circle::before { content: "ℹ️"; }
+        .fa-shield-alt::before { content: "🔒"; }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar informativa -->
+    <div class="login-sidebar">
+        <div class="sidebar-content">
+            <div class="company-logo">
+                <img src="{{ url_for('static', filename='img/icono.png') }}" alt="Logo" style="width: 250px; height: 250px; object-fit: contain;" />
+            </div>
+            <h1 class="sidebar-title">IP Manager</h1>
+            <p class="sidebar-subtitle">
+                Sistema interno de gestión de enlaces y aplicaciones empresariales
+            </p>
+
+            <ul class="feature-list">
+                <li>Acceso centralizado a aplicaciones</li>
+                <li>Gestión de favoritos personalizada</li>
+                <li>Administración de usuarios y permisos</li>
+                <li>Auditoría completa del sistema</li>
+                <li>Interfaz profesional y segura</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Formulario de login -->
+    <div class="login-form-container">
+        <div class="login-form">
+            <div class="form-header">
+                <h1>Iniciar Sesión</h1>
+                <p>Accede al sistema con tus credenciales corporativas</p>
+            </div>
+
+            <!-- Mensajes flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" id="loginForm" novalidate>
+                <div class="form-group">
+                    <label for="username" class="form-label">Usuario</label>
+                    <input type="text"
+                           class="form-control"
+                           id="username"
+                           name="username"
+                           placeholder="Ingresa tu usuario"
+                           required
+                           autocomplete="username">
+                    <div class="invalid-feedback" id="username-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <input type="password"
+                           class="form-control"
+                           id="password"
+                           name="password"
+                           placeholder="Ingresa tu contraseña"
+                           required
+                           autocomplete="current-password">
+                    <div class="invalid-feedback" id="password-error"></div>
+                </div>
+
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Mantener sesión iniciada</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="loginBtn">
+                    Acceder al Sistema
+                </button>
+            </form>
+
+            <div class="footer-info">
+                <p>¿Problemas para acceder? Contacta con el departamento de IT</p>
+                <div class="system-info">
+                    <span>Conexión segura - Datos protegidos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Verificar si FontAwesome se cargó correctamente
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar si FontAwesome está disponible
+            const testIcon = document.createElement('i');
+            testIcon.className = 'fas fa-check';
+            testIcon.style.position = 'absolute';
+            testIcon.style.left = '-9999px';
+            document.body.appendChild(testIcon);
+
+            setTimeout(() => {
+                const computedStyle = window.getComputedStyle(testIcon, '::before');
+                const fontFamily = computedStyle.getPropertyValue('font-family');
+
+                if (!fontFamily.includes('Font Awesome')) {
+                    console.warn('FontAwesome no se cargó correctamente, usando iconos de fallback');
+                    document.body.classList.add('no-fontawesome');
+                }
+
+                document.body.removeChild(testIcon);
+            }, 100);
+
+            const form = document.getElementById('loginForm');
+            const usernameField = document.getElementById('username');
+            const passwordField = document.getElementById('password');
+            const loginBtn = document.getElementById('loginBtn');
+
+            // Auto-focus en el campo usuario
+            usernameField.focus();
+
+            // Validación en tiempo real
+            function validateField(field) {
+                const value = field.value.trim();
+                const errorElement = document.getElementById(field.id + '-error');
+
+                field.classList.remove('is-invalid', 'is-valid');
+                errorElement.textContent = '';
+
+                if (value === '') {
+                    field.classList.add('is-invalid');
+                    errorElement.textContent = 'Este campo es obligatorio';
+                    return false;
+                }
+
+                if (field.id === 'username' && value.length < 3) {
+                    field.classList.add('is-invalid');
+                    errorElement.textContent = 'El usuario debe tener al menos 3 caracteres';
+                    return false;
+                }
+
+                if (field.id === 'password' && value.length < 6) {
+                    field.classList.add('is-invalid');
+                    errorElement.textContent = 'La contraseña debe tener al menos 6 caracteres';
+                    return false;
+                }
+
+                field.classList.add('is-valid');
+                return true;
+            }
+
+            // Validación al salir del campo
+            usernameField.addEventListener('blur', () => validateField(usernameField));
+            passwordField.addEventListener('blur', () => validateField(passwordField));
+
+            // Limpiar errores al escribir
+            usernameField.addEventListener('input', function() {
+                if (this.classList.contains('is-invalid')) {
+                    this.classList.remove('is-invalid');
+                    document.getElementById('username-error').textContent = '';
+                }
+            });
+
+            passwordField.addEventListener('input', function() {
+                if (this.classList.contains('is-invalid')) {
+                    this.classList.remove('is-invalid');
+                    document.getElementById('password-error').textContent = '';
+                }
+            });
+
+            // Envío del formulario
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const isUsernameValid = validateField(usernameField);
+                const isPasswordValid = validateField(passwordField);
+
+                if (isUsernameValid && isPasswordValid) {
+                    // Mostrar estado de carga
+                    loginBtn.classList.add('btn-loading');
+                    loginBtn.disabled = true;
+
+                    // Enviar formulario
+                    setTimeout(() => {
+                        this.submit();
+                    }, 500);
+                }
+            });
+
+            // Permitir envío con Enter
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    form.dispatchEvent(new Event('submit'));
+                }
+            });
+
+            // Remover loading si hay error
+            window.addEventListener('pageshow', function() {
+                loginBtn.classList.remove('btn-loading');
+                loginBtn.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>

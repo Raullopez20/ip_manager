@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Permisos - Administración{% endblock %}
+{% block header_title %}Gestión de Permisos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1 class="page-title">Gestión de Permisos de Aplicaciones Privadas</h1>
+            <p class="page-subtitle">Vista general y gestión masiva de permisos de usuarios</p>
+        </div>
+        <a href="{{ url_for('admin_applications') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver a Aplicaciones
+        </a>
+    </div>
+</div>
+
+<!-- Resumen de aplicaciones privadas -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-lock me-2"></i>Aplicaciones Privadas
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if private_apps %}
+                <div class="row">
+                    {% for app in private_apps %}
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        {% if app.icon_filename %}
+                                        <img src="{{ app.icon_url }}" alt="{{ app.name }}"
+                                             class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                        {% else %}
+                                        <div class="bg-warning text-white rounded d-flex align-items-center justify-content-center"
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-server"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ app.name }}</h6>
+                                        <small class="text-muted">
+                                            {{ app.permissions.count() }} permisos específicos
+                                            {% if app.allowed_departments %}
+                                            <br>Depts: {{ app.get_allowed_departments_list()|join(', ') }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <a href="{{ url_for('admin_application_permissions', app_id=app.id) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-cog"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+                    <h6>No hay aplicaciones privadas configuradas</h6>
+                    <p class="text-muted">Todas las aplicaciones son públicas y accesibles por todos los usuarios.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Usuario</label>
+                        <select class="form-control" name="user">
+                            <option value="">Todos los usuarios</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if selected_user == user.id %}selected{% endif %}>
+                                {{ user.full_name }} ({{ user.username }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Aplicación</label>
+                        <select class="form-control" name="app">
+                            <option value="">Todas las aplicaciones</option>
+                            {% for app in applications %}
+                            <option value="{{ app.id }}" {% if selected_app == app.id %}selected{% endif %}>
+                                {{ app.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-1"></i>Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gestión masiva -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-users-cog me-2"></i>Gestión Masiva de Permisos
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin_bulk_permissions') }}" id="bulkForm">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Aplicación</label>
+                            <select class="form-control" name="app_id" required>
+                                <option value="">Seleccionar aplicación...</option>
+                                {% for app in applications %}
+                                <option value="{{ app.id }}">{{ app.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Acción</label>
+                            <select class="form-control" name="action" id="bulkAction" required>
+                                <option value="">Seleccionar acción...</option>
+                                <option value="grant_department">Otorgar por departamento</option>
+                                <option value="grant_users">Otorgar a usuarios</option>
+                                <option value="revoke_users">Revocar de usuarios</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3" id="departmentField" style="display: none;">
+                            <label class="form-label">Departamento</label>
+                            <select class="form-control" name="department">
+                                <option value="">Seleccionar departamento...</option>
+                                {% for user in users %}
+                                    {% if user.department and user.department not in departments_added %}
+                                        {% set departments_added = departments_added + [user.department] if departments_added else [user.department] %}
+                                        <option value="{{ user.department }}">{{ user.department }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3" id="usersField" style="display: none;">
+                            <label class="form-label">Usuarios</label>
+                            <button type="button" class="btn btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#selectUsersModal">
+                                <i class="fas fa-users me-1"></i>Seleccionar usuarios
+                            </button>
+                            <div id="selectedUsersCount" class="small text-muted mt-1">0 usuarios seleccionados</div>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-magic me-2"></i>Ejecutar Acción Masiva
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de permisos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Permisos Específicos
+                </h5>
+                <span class="badge bg-secondary">{{ permissions.total }} permisos</span>
+            </div>
+            <div class="card-body">
+                {% if permissions.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Aplicación</th>
+                                <th>Departamento</th>
+                                <th>Acceso</th>
+                                <th>Otorgado por</th>
+                                <th>Fecha</th>
+                                <th>Notas</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for permission, user, application in permissions.items %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-2">
+                                            <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center"
+                                                 style="width: 32px; height: 32px;">
+                                                {{ user.full_name[0].upper() }}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <strong>{{ user.full_name }}</strong>
+                                            <br><small class="text-muted">{{ user.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if application.icon_filename %}
+                                        <img src="{{ application.icon_url }}" alt="{{ application.name }}"
+                                             class="rounded me-2" style="width: 24px; height: 24px; object-fit: cover;">
+                                        {% else %}
+                                        <i class="fas fa-server text-primary me-2"></i>
+                                        {% endif %}
+                                        <span>{{ application.name }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">{{ user.department or 'Sin departamento' }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if permission.can_access else 'danger' }}">
+                                        <i class="fas fa-{{ 'check' if permission.can_access else 'times' }} me-1"></i>
+                                        {{ 'Permitido' if permission.can_access else 'Denegado' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ permission.granted_by or 'Sistema' }}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ permission.granted_at.strftime('%d/%m/%Y') }}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ permission.notes[:30] + '...' if permission.notes and permission.notes|length > 30 else permission.notes or '-' }}</small>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('admin_application_permissions', app_id=application.id) }}"
+                                       class="btn btn-sm btn-outline-primary" title="Gestionar permisos">
+                                        <i class="fas fa-cog"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if permissions.pages > 1 %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav>
+                        <ul class="pagination">
+                            {% if permissions.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_all_permissions', page=permissions.prev_num, user=selected_user, app=selected_app) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in permissions.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != permissions.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin_all_permissions', page=page_num, user=selected_user, app=selected_app) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if permissions.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_all_permissions', page=permissions.next_num, user=selected_user, app=selected_app) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h6>No hay permisos específicos configurados</h6>
+                    <p class="text-muted">
+                        {% if selected_user or selected_app %}
+                        No se encontraron permisos con los filtros aplicados.
+                        {% else %}
+                        Los usuarios acceden a las aplicaciones según su configuración de departamentos.
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para seleccionar usuarios -->
+<div class="modal fade" id="selectUsersModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-users me-2"></i>Seleccionar Usuarios
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="userSearch" placeholder="Buscar usuarios...">
+                </div>
+
+                <div class="row">
+                    {% for user in users %}
+                    <div class="col-md-6 mb-2 user-item" data-name="{{ user.full_name|lower }}" data-username="{{ user.username|lower }}" data-department="{{ user.department|lower if user.department else '' }}">
+                        <div class="form-check">
+                            <input class="form-check-input user-checkbox" type="checkbox" value="{{ user.id }}" id="user_{{ user.id }}">
+                            <label class="form-check-label" for="user_{{ user.id }}">
+                                <strong>{{ user.full_name }}</strong>
+                                <br><small class="text-muted">{{ user.username }} - {{ user.department or 'Sin departamento' }}</small>
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="confirmUserSelection()">
+                    Confirmar Selección
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bulkAction = document.getElementById('bulkAction');
+    const departmentField = document.getElementById('departmentField');
+    const usersField = document.getElementById('usersField');
+
+    // Toggle campos según acción seleccionada
+    bulkAction.addEventListener('change', function() {
+        departmentField.style.display = 'none';
+        usersField.style.display = 'none';
+
+        if (this.value === 'grant_department') {
+            departmentField.style.display = 'block';
+        } else if (this.value === 'grant_users' || this.value === 'revoke_users') {
+            usersField.style.display = 'block';
+        }
+    });
+
+    // Búsqueda de usuarios en modal
+    document.getElementById('userSearch').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const userItems = document.querySelectorAll('.user-item');
+
+        userItems.forEach(item => {
+            const name = item.dataset.name;
+            const username = item.dataset.username;
+            const department = item.dataset.department;
+
+            const matches = name.includes(searchTerm) ||
+                          username.includes(searchTerm) ||
+                          department.includes(searchTerm);
+
+            item.style.display = matches ? 'block' : 'none';
+        });
+    });
+
+    // Validación del formulario masivo
+    document.getElementById('bulkForm').addEventListener('submit', function(e) {
+        const action = document.getElementById('bulkAction').value;
+
+        if (action === 'grant_users' || action === 'revoke_users') {
+            const selectedUsers = document.querySelectorAll('input[name="user_ids[]"]:checked');
+            if (selectedUsers.length === 0) {
+                e.preventDefault();
+                alert('Por favor selecciona al menos un usuario.');
+                return;
+            }
+        }
+
+        if (!confirm('¿Estás seguro de ejecutar esta acción masiva? Esta operación no se puede deshacer.')) {
+            e.preventDefault();
+        }
+    });
+});
+
+let selectedUserIds = [];
+
+function confirmUserSelection() {
+    const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+    selectedUserIds = Array.from(checkboxes).map(cb => cb.value);
+
+    // Actualizar contador
+    document.getElementById('selectedUsersCount').textContent = selectedUserIds.length + ' usuarios seleccionados';
+
+    // Agregar inputs hidden al formulario
+    const form = document.getElementById('bulkForm');
+
+    // Remover inputs previos
+    form.querySelectorAll('input[name="user_ids[]"]').forEach(input => input.remove());
+
+    // Agregar nuevos inputs
+    selectedUserIds.forEach(userId => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'user_ids[]';
+        input.value = userId;
+        form.appendChild(input);
+    });
+
+    // Cerrar modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('selectUsersModal'));
+    modal.hide();
+}
+</script>
+{% endblock %}

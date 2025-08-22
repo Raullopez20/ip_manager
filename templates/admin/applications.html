@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block title %}Aplicaciones - Administración{% endblock %}
+{% block header_title %}Gestión de Aplicaciones{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">Gestión de Aplicaciones</h1>
+            <p class="page-subtitle">Administra todas las aplicaciones del sistema</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin_all_permissions') }}" class="btn btn-warning">
+                <i class="fas fa-lock me-2"></i>Gestionar Permisos
+            </a>
+            <a href="{{ url_for('admin_create_application') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Nueva Aplicación
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas rápidas -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3 rounded-circle bg-primary text-white">
+                        <i class="fas fa-server fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1">{{ applications.total }}</h3>
+                <p class="text-muted mb-0">Total Aplicaciones</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3 rounded-circle bg-success text-white">
+                        <i class="fas fa-check fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1">{{ applications.items|selectattr('is_active')|list|length }}</h3>
+                <p class="text-muted mb-0">Activas</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3 rounded-circle bg-warning text-white">
+                        <i class="fas fa-lock fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1">{{ applications.items|selectattr('is_private')|list|length }}</h3>
+                <p class="text-muted mb-0">Privadas</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center justify-content-center mb-2">
+                    <div class="p-3 rounded-circle bg-info text-white">
+                        <i class="fas fa-folder fa-lg"></i>
+                    </div>
+                </div>
+                <h3 class="mb-1">{{ categories|length }}</h3>
+                <p class="text-muted mb-0">Categorías</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-6">
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text"
+                                   class="form-control search-input"
+                                   name="search"
+                                   placeholder="Buscar por nombre, IP, descripción..."
+                                   value="{{ search_query or '' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-control" name="category">
+                            <option value="">Todas las categorías</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-1"></i>Buscar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de aplicaciones -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Lista de Aplicaciones
+                </h5>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary active" onclick="setViewMode('table')">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setViewMode('grid')">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if applications.items %}
+                <div id="table-view">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Aplicación</th>
+                                    <th>Categoría</th>
+                                    <th>Acceso</th>
+                                    <th>Privacidad</th>
+                                    <th>Estadísticas</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in applications.items %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                {% if app.icon_filename %}
+                                                <img src="{{ app.icon_url }}" alt="{{ app.name }}"
+                                                     class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                                {% else %}
+                                                <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center"
+                                                     style="width: 40px; height: 40px;">
+                                                    <i class="fas fa-server"></i>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ app.name }}</h6>
+                                                <small class="text-muted">{{ app.description[:50] if app.description else 'Sin descripción' }}...</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if app.category %}
+                                        <span class="badge" style="background-color: {{ app.category.color }}20; color: {{ app.category.color }};">
+                                            <i class="{{ app.category.icon }} me-1"></i>{{ app.category.name }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">Sin categoría</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <code>{{ app.full_url }}</code>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column gap-1">
+                                            <span class="badge bg-{{ 'warning' if app.is_private else 'success' }}">
+                                                <i class="fas fa-{{ 'lock' if app.is_private else 'globe' }} me-1"></i>
+                                                {{ 'Privada' if app.is_private else 'Pública' }}
+                                            </span>
+                                            {% if app.is_private %}
+                                                {% if app.allowed_departments %}
+                                                <small class="text-muted">
+                                                    <i class="fas fa-users me-1"></i>{{ app.get_allowed_departments_list()|length }} depts
+                                                </small>
+                                                {% endif %}
+                                                {% if app.permissions.count() > 0 %}
+                                                <small class="text-muted">
+                                                    <i class="fas fa-user-check me-1"></i>{{ app.permissions.count() }} permisos
+                                                </small>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <small class="text-muted">
+                                                <i class="fas fa-eye me-1"></i>{{ app.access_count }} accesos
+                                            </small>
+                                            {% if app.last_accessed %}
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>{{ app.last_accessed.strftime('%d/%m/%Y') }}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if app.is_active else 'secondary' }}">
+                                            {{ 'Activa' if app.is_active else 'Inactiva' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ app.full_url }}" target="_blank" class="btn btn-outline-success" title="Abrir aplicación">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                            {% if app.is_private %}
+                                            <a href="{{ url_for('admin_application_permissions', app_id=app.id) }}"
+                                               class="btn btn-outline-warning" title="Gestionar permisos">
+                                                <i class="fas fa-lock"></i>
+                                            </a>
+                                            {% endif %}
+                                            <a href="{{ url_for('admin_edit_application', app_id=app.id) }}"
+                                               class="btn btn-outline-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form method="POST" action="{{ url_for('admin_toggle_application', app_id=app.id) }}"
+                                                  style="display: inline;">
+                                                <button type="submit" class="btn btn-outline-{{ 'secondary' if app.is_active else 'success' }}"
+                                                        title="{{ 'Desactivar' if app.is_active else 'Activar' }}">
+                                                    <i class="fas fa-{{ 'pause' if app.is_active else 'play' }}"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('admin_delete_application', app_id=app.id) }}"
+                                                  style="display: inline;" onsubmit="return confirm('¿Eliminar esta aplicación?')">
+                                                <button type="submit" class="btn btn-outline-danger" title="Eliminar">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="grid-view" class="d-none">
+                    <div class="app-grid">
+                        {% for app in applications.items %}
+                        <div class="app-card">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="app-icon">
+                                    {% if app.icon_filename %}
+                                    <img src="{{ app.icon_url }}" alt="{{ app.name }}">
+                                    {% else %}
+                                    <i class="fas fa-server fa-2x text-primary"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex flex-column gap-1">
+                                    <span class="badge bg-{{ 'warning' if app.is_private else 'success' }}">
+                                        <i class="fas fa-{{ 'lock' if app.is_private else 'globe' }}"></i>
+                                    </span>
+                                    <span class="badge bg-{{ 'success' if app.is_active else 'secondary' }}">
+                                        {{ 'Activa' if app.is_active else 'Inactiva' }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <h6 class="app-name">{{ app.name }}</h6>
+                            <p class="app-description">
+                                {{ app.description[:80] if app.description else 'Sin descripción' }}
+                                {% if app.description and app.description|length > 80 %}...{% endif %}
+                            </p>
+
+                            <div class="app-meta mb-2">
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-globe me-1"></i>{{ app.ip_address }}
+                                    {% if app.port and app.port not in [80, 443] %}:{{ app.port }}{% endif %}
+                                </small>
+                                {% if app.category %}
+                                <small class="text-muted d-block">
+                                    <i class="{{ app.category.icon }} me-1" style="color: {{ app.category.color }};"></i>
+                                    {{ app.category.name }}
+                                </small>
+                                {% endif %}
+                            </div>
+
+                            <div class="app-actions d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ app.access_count }} accesos</small>
+                                <div class="btn-group btn-group-sm">
+                                    {% if app.is_private %}
+                                    <a href="{{ url_for('admin_application_permissions', app_id=app.id) }}"
+                                       class="btn btn-outline-warning">
+                                        <i class="fas fa-lock"></i>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{{ url_for('admin_edit_application', app_id=app.id) }}"
+                                       class="btn btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Paginación -->
+                {% if applications.pages > 1 %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav>
+                        <ul class="pagination">
+                            {% if applications.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_applications', page=applications.prev_num, search=search_query, category=selected_category) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in applications.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != applications.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin_applications', page=page_num, search=search_query, category=selected_category) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if applications.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin_applications', page=applications.next_num, search=search_query, category=selected_category) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-server fa-3x text-muted"></i>
+                    </div>
+                    <h5 class="mb-3">No hay aplicaciones</h5>
+                    <p class="text-muted mb-4">
+                        {% if search_query or selected_category %}
+                        No se encontraron aplicaciones con los filtros aplicados.
+                        {% else %}
+                        Aún no hay aplicaciones registradas en el sistema.
+                        {% endif %}
+                    </p>
+                    <a href="{{ url_for('admin_create_application') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Crear Primera Aplicación
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function setViewMode(mode) {
+    const tableView = document.getElementById('table-view');
+    const gridView = document.getElementById('grid-view');
+    const tableBtn = document.querySelector('button[onclick="setViewMode(\'table\')"]');
+    const gridBtn = document.querySelector('button[onclick="setViewMode(\'grid\')"]');
+
+    if (mode === 'table') {
+        tableView.classList.remove('d-none');
+        gridView.classList.add('d-none');
+        tableBtn.classList.add('active');
+        gridBtn.classList.remove('active');
+    } else {
+        tableView.classList.add('d-none');
+        gridView.classList.remove('d-none');
+        tableBtn.classList.remove('active');
+        gridBtn.classList.add('active');
+    }
+
+    // Guardar preferencia
+    localStorage.setItem('adminViewMode', mode);
+}
+
+// Cargar preferencia de vista
+document.addEventListener('DOMContentLoaded', function() {
+    const savedViewMode = localStorage.getItem('adminViewMode');
+    if (savedViewMode) {
+        setViewMode(savedViewMode);
+    }
+});
+
+// Auto-submit del formulario de búsqueda
+let searchTimeout;
+document.querySelector('input[name="search"]').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        if (this.value.length >= 3 || this.value.length === 0) {
+            this.form.submit();
+        }
+    }, 800);
+});
+</script>
+{% endblock %}

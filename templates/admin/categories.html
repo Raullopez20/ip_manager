@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Categorías - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Gestión de Categorías</h1>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                    <i class="fas fa-plus"></i> Nueva Categoría
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    {% if categories %}
+                    <div class="row">
+                        {% for category in categories %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100" style="border-left: 4px solid {{ category.color }};">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="fas {{ category.icon }} fa-2x me-3" style="color: {{ category.color }};"></i>
+                                        <div>
+                                            <h5 class="card-title mb-1">{{ category.name }}</h5>
+                                            <small class="text-muted">{{ category.applications.count() }} aplicaciones</small>
+                                        </div>
+                                    </div>
+
+                                    {% if category.description %}
+                                    <p class="card-text">{{ category.description }}</p>
+                                    {% endif %}
+
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <small class="text-muted">
+                                            Creada: {{ category.created_at.strftime('%d/%m/%Y') }}
+                                        </small>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('admin_edit_category', category_id=category.id) }}"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if category.applications.count() == 0 %}
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    onclick="confirmDelete({{ category.id }}, '{{ category.name }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% else %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    title="No se puede eliminar: tiene aplicaciones asociadas" disabled>
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <h5>No hay categorías creadas</h5>
+                        <p class="text-muted">Crea tu primera categoría para organizar las aplicaciones.</p>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                            <i class="fas fa-plus"></i> Crear Primera Categoría
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear nueva categoría -->
+<div class="modal fade" id="createCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nueva Categoría</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nombre *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="color" class="form-label">Color</label>
+                                <input type="color" class="form-control form-control-color"
+                                       id="color" name="color" value="#007bff">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="icon" class="form-label">Icono FontAwesome</label>
+                                <select class="form-select" id="icon" name="icon">
+                                    <option value="fa-folder">📁 Carpeta</option>
+                                    <option value="fa-server">🖥️ Servidor</option>
+                                    <option value="fa-globe">🌐 Web</option>
+                                    <option value="fa-database">🗄️ Base de Datos</option>
+                                    <option value="fa-chart-line">📈 Monitoreo</option>
+                                    <option value="fa-network-wired">🔗 Red</option>
+                                    <option value="fa-shield-alt">🛡️ Seguridad</option>
+                                    <option value="fa-tools">🔧 Herramientas</option>
+                                    <option value="fa-cloud">☁️ Cloud</option>
+                                    <option value="fa-mobile-alt">📱 Móvil</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Categoría</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que quieres eliminar la categoría <strong id="categoryName"></strong>?</p>
+                <p class="text-danger">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(categoryId, categoryName) {
+    document.getElementById('categoryName').textContent = categoryName;
+    document.getElementById('deleteForm').action = `/admin/categories/${categoryId}/delete`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

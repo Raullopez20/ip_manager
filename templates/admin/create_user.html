@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Usuario - IP Manager{% endblock %}
+{% block header_title %}Crear Nuevo Usuario{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Administración</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_users') }}">Usuarios</a></li>
+            <li class="breadcrumb-item active">Crear Usuario</li>
+        </ol>
+    </nav>
+    <h1 class="page-title">Crear Nuevo Usuario</h1>
+    <p class="page-subtitle">Agrega un nuevo usuario al sistema con permisos específicos</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Información del Usuario
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="createUserForm" novalidate>
+                    <div class="row">
+                        <!-- Información Personal -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Información Personal</h6>
+
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label">
+                                    <i class="fas fa-user me-1 text-primary"></i>
+                                    Nombre Completo <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="full_name"
+                                       name="full_name"
+                                       placeholder="Ej: Juan Pérez García"
+                                       required
+                                       autocomplete="name">
+                                <div class="invalid-feedback">
+                                    Por favor ingresa el nombre completo.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope me-1 text-primary"></i>
+                                    Correo Electrónico <span class="text-danger">*</span>
+                                </label>
+                                <input type="email"
+                                       class="form-control"
+                                       id="email"
+                                       name="email"
+                                       placeholder="usuario@empresa.com"
+                                       required
+                                       autocomplete="email">
+                                <div class="invalid-feedback">
+                                    Por favor ingresa un email válido.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="department" class="form-label">
+                                    <i class="fas fa-building me-1 text-primary"></i>
+                                    Departamento
+                                </label>
+                                <select class="form-control" id="department" name="department">
+                                    <option value="">Seleccionar departamento</option>
+                                    <option value="Administracion">Administración</option>
+                                    <option value="Almacen">Almacén</option>
+                                    <option value="Campo">Campo</option>
+                                    <option value="Investigacion">Investigación</option>
+                                    <option value="Logistica">Logística</option>
+                                    <option value="Prevencion">Prevención</option>
+                                    <option value="Produccion">Producción</option>
+                                    <option value="Recursos Humanos">Recursos Humanos</option>
+                                    <option value="Informatica">Informática</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Credenciales -->
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Credenciales de Acceso</h6>
+
+                            <div class="mb-3">
+                                <label for="username" class="form-label">
+                                    <i class="fas fa-at me-1 text-primary"></i>
+                                    Nombre de Usuario <span class="text-danger">*</span>
+                                </label>
+                                <input type="text"
+                                       class="form-control"
+                                       id="username"
+                                       name="username"
+                                       placeholder="usuario123"
+                                       required
+                                       autocomplete="username">
+                                <div class="form-text">
+                                    Solo letras, números y guiones bajos. Mínimo 3 caracteres.
+                                </div>
+                                <div class="invalid-feedback">
+                                    Por favor ingresa un nombre de usuario válido.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">
+                                    <i class="fas fa-lock me-1 text-primary"></i>
+                                    Contraseña <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <input type="password"
+                                           class="form-control"
+                                           id="password"
+                                           name="password"
+                                           placeholder="Contraseña segura"
+                                           required
+                                           autocomplete="new-password"
+                                           minlength="6">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                    Mínimo 6 caracteres. Se recomienda usar mayúsculas, números y símbolos.
+                                </div>
+                                <div class="invalid-feedback">
+                                    La contraseña debe tener al menos 6 caracteres.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">
+                                    <i class="fas fa-lock me-1 text-primary"></i>
+                                    Confirmar Contraseña <span class="text-danger">*</span>
+                                </label>
+                                <input type="password"
+                                       class="form-control"
+                                       id="confirm_password"
+                                       name="confirm_password"
+                                       placeholder="Repetir contraseña"
+                                       required
+                                       autocomplete="new-password">
+                                <div class="invalid-feedback">
+                                    Las contraseñas no coinciden.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Permisos -->
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-3">Permisos y Configuración</h6>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-light">
+                                <div class="card-body">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin">
+                                        <label class="form-check-label" for="is_admin">
+                                            <strong>Administrador del Sistema</strong>
+                                        </label>
+                                    </div>
+                                    <div class="form-text mt-2">
+                                        Los administradores pueden gestionar usuarios, aplicaciones y ver todos los logs del sistema.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card border-light">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <strong>Estado del Usuario</strong>
+                                            <div class="form-text">El usuario estará activo por defecto</div>
+                                        </div>
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Activo
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancelar
+                        </a>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-primary" onclick="generatePassword()">
+                                <i class="fas fa-key me-1"></i>Generar Contraseña
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Crear Usuario
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>Usuario Creado
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>El usuario ha sido creado exitosamente.</p>
+                <div class="alert alert-info">
+                    <strong>Nota:</strong> Asegúrate de proporcionar las credenciales al usuario para que pueda acceder al sistema.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a href="{{ url_for('admin_create_user') }}" class="btn btn-primary">Crear Otro Usuario</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación del formulario
+document.getElementById('createUserForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    if (validateForm()) {
+        // Si la validación pasa, enviar el formulario
+        this.submit();
+    }
+});
+
+function validateForm() {
+    let isValid = true;
+    const form = document.getElementById('createUserForm');
+
+    // Limpiar validaciones anteriores
+    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
+
+    // Validar campos requeridos
+    const requiredFields = ['full_name', 'email', 'username', 'password', 'confirm_password'];
+
+    requiredFields.forEach(fieldName => {
+        const field = document.getElementById(fieldName);
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.add('is-valid');
+        }
+    });
+
+    // Validar email
+    const email = document.getElementById('email');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email.value && !emailRegex.test(email.value)) {
+        email.classList.remove('is-valid');
+        email.classList.add('is-invalid');
+        isValid = false;
+    }
+
+    // Validar nombre de usuario
+    const username = document.getElementById('username');
+    const usernameRegex = /^[a-zA-Z0-9_]{3,}$/;
+    if (username.value && !usernameRegex.test(username.value)) {
+        username.classList.remove('is-valid');
+        username.classList.add('is-invalid');
+        isValid = false;
+    }
+
+    // Validar contraseñas
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+
+    if (password.value.length < 6) {
+        password.classList.remove('is-valid');
+        password.classList.add('is-invalid');
+        isValid = false;
+    }
+
+    if (password.value !== confirmPassword.value) {
+        confirmPassword.classList.remove('is-valid');
+        confirmPassword.classList.add('is-invalid');
+        isValid = false;
+    }
+
+    return isValid;
+}
+
+// Validación en tiempo real
+document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('blur', function() {
+        validateField(this);
+    });
+
+    input.addEventListener('input', function() {
+        if (this.classList.contains('is-invalid')) {
+            validateField(this);
+        }
+    });
+});
+
+function validateField(field) {
+    const value = field.value.trim();
+
+    field.classList.remove('is-invalid', 'is-valid');
+
+    switch(field.id) {
+        case 'email':
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (value && emailRegex.test(value)) {
+                field.classList.add('is-valid');
+            } else if (value) {
+                field.classList.add('is-invalid');
+            }
+            break;
+
+        case 'username':
+            const usernameRegex = /^[a-zA-Z0-9_]{3,}$/;
+            if (value && usernameRegex.test(value)) {
+                field.classList.add('is-valid');
+            } else if (value) {
+                field.classList.add('is-invalid');
+            }
+            break;
+
+        case 'password':
+            if (value.length >= 6) {
+                field.classList.add('is-valid');
+                // Revalidar confirmación si existe
+                const confirm = document.getElementById('confirm_password');
+                if (confirm.value) {
+                    validateField(confirm);
+                }
+            } else if (value) {
+                field.classList.add('is-invalid');
+            }
+            break;
+
+        case 'confirm_password':
+            const password = document.getElementById('password').value;
+            if (value && value === password) {
+                field.classList.add('is-valid');
+            } else if (value) {
+                field.classList.add('is-invalid');
+            }
+            break;
+
+        default:
+            if (value) {
+                field.classList.add('is-valid');
+            }
+    }
+}
+
+function togglePassword() {
+    const passwordField = document.getElementById('password');
+    const toggleIcon = document.getElementById('toggleIcon');
+
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordField.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+
+function generatePassword() {
+    const length = 12;
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+
+    for (let i = 0; i < length; i++) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+
+    document.getElementById('password').value = password;
+    document.getElementById('confirm_password').value = password;
+
+    // Validar campos después de generar
+    validateField(document.getElementById('password'));
+    validateField(document.getElementById('confirm_password'));
+
+    // Mostrar contraseña temporalmente
+    const passwordField = document.getElementById('password');
+    const originalType = passwordField.type;
+    passwordField.type = 'text';
+
+    setTimeout(() => {
+        passwordField.type = originalType;
+    }, 3000);
+}
+
+// Generar username basado en el nombre
+document.getElementById('full_name').addEventListener('input', function() {
+    const fullName = this.value.trim();
+    const usernameField = document.getElementById('username');
+
+    if (fullName && !usernameField.value) {
+        // Generar username simple basado en el nombre
+        const names = fullName.toLowerCase().split(' ');
+        let username = '';
+
+        if (names.length >= 2) {
+            username = names[0] + names[names.length - 1].charAt(0);
+        } else {
+            username = names[0];
+        }
+
+        // Limpiar caracteres especiales
+        username = username.replace(/[^a-z0-9]/g, '');
+
+        if (username.length >= 3) {
+            usernameField.value = username;
+            validateField(usernameField);
+        }
+    }
+});
+
+// Generar email basado en username
+document.getElementById('username').addEventListener('blur', function() {
+    const username = this.value.trim();
+    const emailField = document.getElementById('email');
+
+    if (username && !emailField.value) {
+        emailField.value = username + '@empresa.com';
+        validateField(emailField);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Explorar Aplicaciones - IP Manager{% endblock %}
+{% block header_title %}Explorar Aplicaciones{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Explorar Aplicaciones</h1>
+    <p class="page-subtitle">Descubre todas las aplicaciones disponibles en tu empresa</p>
+</div>
+
+<!-- Filtros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-6">
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text"
+                                   class="form-control search-input"
+                                   name="search"
+                                   placeholder="Buscar por nombre, descripción o IP..."
+                                   value="{{ search_query or '' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-control" name="category" onchange="this.form.submit()">
+                            <option value="">Todas las categorías</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if current_category == category.id %}selected{% endif %}>
+                                {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-1"></i>Buscar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resultados -->
+<div class="row">
+    <div class="col-12">
+        {% if applications.items %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-server me-2"></i>
+                    Aplicaciones Disponibles
+                    <span class="badge bg-secondary ms-2">{{ applications.total }}</span>
+                </h5>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary active" onclick="setViewMode('grid')">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setViewMode('list')">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="grid-view" class="app-grid">
+                    {% for app in applications.items %}
+                    <div class="app-card" onclick="accessApp({{ app.id }})">
+                        <div class="app-icon">
+                            {% if app.icon_filename %}
+                            <img src="{{ app.icon_url }}" alt="{{ app.name }}" onerror="this.outerHTML='<i class=\'fas fa-server fa-2x text-primary\'></i>'">
+                            {% else %}
+                            <i class="fas fa-server fa-2x text-primary"></i>
+                            {% endif %}
+                        </div>
+                        <h6 class="app-name">{{ app.name }}</h6>
+                        <p class="app-description">
+                            {{ app.description[:100] if app.description else 'Sin descripción' }}
+                            {% if app.description and app.description|length > 100 %}...{% endif %}
+                        </p>
+                        <div class="app-meta mb-2">
+                            <small class="text-muted d-block">
+                                <i class="fas fa-globe me-1"></i>{{ app.ip_address }}
+                                {% if app.port and app.port not in [80, 443] %}:{{ app.port }}{% endif %}
+                            </small>
+                            {% if app.category %}
+                            <small class="text-muted d-block">
+                                <i class="{{ 'fas ' + app.category.icon if not app.category.icon.startswith('fas ') and not app.category.icon.startswith('far ') and not app.category.icon.startswith('fab ') else app.category.icon }} me-1" style="color: {{ app.category.color }};"></i>
+                                {{ app.category.name }}
+                            </small>
+                            {% endif %}
+                            {% if app.tags %}
+                            <div class="mt-2">
+                                {% for tag in app.get_tags_list()[:3] %}
+                                <span class="badge bg-light text-dark me-1">{{ tag }}</span>
+                                {% endfor %}
+                                {% if app.get_tags_list()|length > 3 %}
+                                <span class="badge bg-light text-dark">+{{ app.get_tags_list()|length - 3 }}</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="app-actions">
+                            <button class="btn-favorite {% if app.id in user_favorites %}active{% endif %}"
+                                    onclick="event.stopPropagation(); toggleFavorite({{ app.id }}, this)">
+                                <i class="fa{% if app.id in user_favorites %}s{% else %}r{% endif %} fa-star"></i>
+                            </button>
+                            <small class="text-muted ms-auto">
+                                {{ app.access_count }} accesos
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div id="list-view" class="d-none">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Aplicación</th>
+                                    <th>Categoría</th>
+                                    <th>Dirección</th>
+                                    <th>Accesos</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in applications.items %}
+                                <tr style="cursor: pointer;" onclick="accessApp({{ app.id }})">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                {% if app.icon_filename %}
+                                                <img src="{{ app.icon_url }}" alt="{{ app.name }}"
+                                                     class="rounded" style="width: 32px; height: 32px; object-fit: cover;"
+                                                     onerror="this.outerHTML='<i class=\'fas fa-server fa-lg text-primary\'></i>'">
+                                                {% else %}
+                                                <i class="fas fa-server fa-lg text-primary"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ app.name }}</h6>
+                                                <small class="text-muted">{{ app.description[:50] if app.description else 'Sin descripción' }}...</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if app.category %}
+                                        <span class="badge" style="background-color: {{ app.category.color }}20; color: {{ app.category.color }};">
+                                            <i class="{{ 'fas ' + app.category.icon if not app.category.icon.startswith('fas ') and not app.category.icon.startswith('far ') and not app.category.icon.startswith('fab ') else app.category.icon }} me-1"></i>{{ app.category.name }}
+                                        </span>
+                                        {% else %}
+                                        <span class="text-muted">Sin categoría</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <code>{{ app.ip_address }}{% if app.port and app.port not in [80, 443] %}:{{ app.port }}{% endif %}</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ app.access_count }}</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-warning {% if app.id in user_favorites %}active{% endif %}"
+                                                onclick="event.stopPropagation(); toggleFavorite({{ app.id }}, this)">
+                                            <i class="fa{% if app.id in user_favorites %}s{% else %}r{% endif %} fa-star"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Paginación -->
+                {% if applications.pages > 1 %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav>
+                        <ul class="pagination">
+                            {% if applications.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('browse_applications', page=applications.prev_num, search=search_query, category=current_category) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in applications.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != applications.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('browse_applications', page=page_num, search=search_query, category=current_category) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">…</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if applications.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('browse_applications', page=applications.next_num, search=search_query, category=current_category) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-search fa-3x text-muted"></i>
+                </div>
+                <h5 class="mb-3">No se encontraron aplicaciones</h5>
+                <p class="text-muted mb-4">
+                    {% if search_query or current_category %}
+                    Intenta ajustar tus filtros de búsqueda o explora todas las categorías.
+                    {% else %}
+                    Aún no hay aplicaciones disponibles en el sistema.
+                    {% endif %}
+                </p>
+                {% if search_query or current_category %}
+                <a href="{{ url_for('browse_applications') }}" class="btn btn-primary">
+                    <i class="fas fa-refresh me-2"></i>Ver Todas las Aplicaciones
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function setViewMode(mode) {
+    const gridView = document.getElementById('grid-view');
+    const listView = document.getElementById('list-view');
+    const gridBtn = document.querySelector('button[onclick="setViewMode(\'grid\')"]');
+    const listBtn = document.querySelector('button[onclick="setViewMode(\'list\')"]');
+
+    if (mode === 'grid') {
+        gridView.classList.remove('d-none');
+        listView.classList.add('d-none');
+        gridBtn.classList.add('active');
+        listBtn.classList.remove('active');
+    } else {
+        gridView.classList.add('d-none');
+        listView.classList.remove('d-none');
+        gridBtn.classList.remove('active');
+        listBtn.classList.add('active');
+    }
+
+    // Guardar preferencia en localStorage
+    localStorage.setItem('viewMode', mode);
+}
+
+// Cargar preferencia de vista
+document.addEventListener('DOMContentLoaded', function() {
+    const savedViewMode = localStorage.getItem('viewMode');
+    if (savedViewMode) {
+        setViewMode(savedViewMode);
+    }
+});
+
+// Auto-submit del formulario al escribir en el campo de búsqueda
+let searchTimeout;
+document.querySelector('input[name="search"]').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        this.form.submit();
+    }, 500);
+});
+</script>
+{% endblock %}
